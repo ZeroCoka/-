@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Love & Deepspace 경험치 계산기</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Love & Deepspace 경험치 계산기</h1>
+    <label>현재 레벨: <input type="number" id="currentLevel" min="1" max="80" /></label>
+    <label>목표 레벨: <input type="number" id="targetLevel" min="1" max="80" /></label>
+    <label>카드 등급:
+      <select id="cardGrade">
+        <option value="5">5성</option>
+        <option value="4">4성</option>
+        <option value="3">3성</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="useSSR" /> SSR 소원 포함</label>
+    <button onclick="calculate()">계산하기</button>
+
+    <div class="results" id="results"></div>
+
+    <div class="sub-section">
+      <h2>보유 자원 기반 최대 레벨 예측</h2>
+      <label>보유 SSR 소원병: <input type="number" id="ownSSR" min="0" value="0"/></label>
+      <label>보유 SR 소원병: <input type="number" id="ownSR" min="0" value="0"/></label>
+      <label>보유 R 소원병: <input type="number" id="ownR" min="0" value="0"/></label>
+      <label>보유 N 소원병: <input type="number" id="ownN" min="0" value="0"/></label>
+      <label>보유 골드: <input type="number" id="ownGold" min="0" value="0"/></label>
+      <button onclick="predictMaxLevel()">자원 기반 최대 레벨 예측</button>
+      <div class="results" id="predictResults"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
