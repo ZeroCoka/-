@@ -147,15 +147,17 @@
       ));
 
       let awakenN = 0, awakenR = 0, awakenSR = 0, awakenGold = 0;
-      for (let lvl = current; lvl < target; lvl++) {
-        if (awakenCostTable[lvl]) {
-          const cost = awakenCostTable[lvl];
-          awakenN += cost.N;
-          awakenR += cost.R;
-          awakenSR += cost.SR;
-          awakenGold += cost.gold;
-        }
-      }
+const awakenLevels = Object.keys(awakenCostTable).map(Number);
+for (const level of awakenLevels) {
+  if (level > current && level <= target) {
+    const cost = awakenCostTable[level];
+    awakenN += cost.N;
+    awakenR += cost.R;
+    awakenSR += cost.SR;
+    awakenGold += cost.gold;
+  }
+}
+
 
       let awakenRuns = Math.ceil(Math.max(
         awakenN / awakenDrop.N,
