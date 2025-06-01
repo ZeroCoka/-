@@ -4,7 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Love & Deepspace 경험치 계산기</title>
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      padding: 20px;
+      background: #f0f4f8;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    label, select, input {
+      display: block;
+      margin: 12px 0;
+    }
+    button {
+      padding: 10px 20px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .results {
+      margin-top: 20px;
+      background: #e8f0fe;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .sub-section {
+      border-top: 1px solid #ccc;
+      margin-top: 30px;
+      padding-top: 20px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -18,13 +59,13 @@
         <option value="3">3성</option>
       </select>
     </label>
-    <label><input type="checkbox" id="useSSR" /> SSR 소원병 포함</label>
+    <label><input type="checkbox" id="useSSR" /> SSR 아이템 포함</label>
     <button onclick="calculate()">계산하기</button>
 
     <div class="results" id="results"></div>
 
     <div class="sub-section">
-      <h2>보유 자원 기반 최대 레벨 예측</h2>
+      <h2>보유 재화로 레벨 예측</h2>
       <label>보유 SSR 소원병: <input type="number" id="ownSSR" min="0" value="0"/></label>
       <label>보유 SR 소원병: <input type="number" id="ownSR" min="0" value="0"/></label>
       <label>보유 R 소원병: <input type="number" id="ownR" min="0" value="0"/></label>
@@ -35,6 +76,88 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
-</body>
-</html>
+  <script>
+    const expTables = {
+      5: [ [1, 10, 1710], [11, 20, 2850], [21, 30, 4680], [31, 40, 9380], [41, 50, 18760], [51, 60, 37500], [61, 70, 75000], [71, 80, 150050] ],
+      4: [ [1, 10, 1320], [11, 20, 2200], [21, 30, 3740], [31, 40, 7480], [41, 50, 14960], [51, 60, 29920], [61, 70, 59880], [71, 80, 119760] ],
+      3: [ [1, 10, 960], [11, 20, 1600], [21, 30, 2720], [31, 40, 5440], [41, 50, 10880], [51, 60, 21760], [61, 70, 43520], [71, 80, 87040] ]
+    };
+
+    const awakenTables = {
+      5: {
+        10: { N: 40, R: 15, SR: 0, gold: 15000 }, 20: { N: 80, R: 25, SR: 0, gold: 25000 },
+        30: { N: 160, R: 50, SR: 0, gold: 50000 }, 40: { N: 320, R: 100, SR: 0, gold: 80000 },
+        50: { N: 640, R: 200, SR: 60, gold: 120000 }, 60: { N: 800, R: 300, SR: 90, gold: 160000 },
+        70: { N: 1000, R: 400, SR: 120, gold: 200000 }, 80: { N: 1200, R: 480, SR: 180, gold: 250000 }
+      },
+      4: {
+        10: { N: 30, R: 10, SR: 0, gold: 10000 }, 20: { N: 60, R: 20, SR: 0, gold: 15000 },
+        30: { N: 120, R: 40, SR: 0, gold: 30000 }, 40: { N: 240, R: 80, SR: 0, gold: 50000 },
+        50: { N: 480, R: 160, SR: 40, gold: 80000 }, 60: { N: 600, R: 240, SR: 60, gold: 120000 },
+        70: { N: 800, R: 320, SR: 80, gold: 160000 }, 80: { N: 1000, R: 400, SR: 120, gold: 200000 }
+      },
+      3: {
+        10: { N: 20, R: 8, SR: 0, gold: 8000 }, 20: { N: 40, R: 16, SR: 0, gold: 12000 },
+        30: { N: 80, R: 32, SR: 0, gold: 20000 }, 40: { N: 160, R: 64, SR: 0, gold: 35000 },
+        50: { N: 320, R: 128, SR: 30, gold: 50000 }, 60: { N: 400, R: 200, SR: 45, gold: 80000 },
+        70: { N: 600, R: 300, SR: 60, gold: 120000 }, 80: { N: 800, R: 400, SR: 90, gold: 150000 }
+      }
+    };
+
+    const itemExp = { N: 10, R: 50, SR: 250, SSR: 1000 };
+    const dungeonDrop = { N: 8, R: 1, SR: 1 };
+    const awakenDrop = { N: 10, R: 4, SR: 1 };
+    const staminaPerRun = 8;
+    const goldPerLevel = 2000;
+
+    function calculate() {
+      const current = parseInt(document.getElementById('currentLevel').value);
+      const target = parseInt(document.getElementById('targetLevel').value);
+      const useSSR = document.getElementById('useSSR').checked;
+      const grade = parseInt(document.getElementById('cardGrade').value);
+
+      const expTable = expTables[grade];
+      const awakenCostTable = awakenTables[grade];
+
+      let totalExp = 0;
+      for (const [start, end, exp] of expTable) {
+        if (target <= start || current > end) continue;
+        const from = Math.max(current, start);
+        const to = Math.min(target, end + 1);
+        const levels = to - from;
+        totalExp += (exp / (end - start + 1)) * levels;
+      }
+
+      const result = { N: 0, R: 0, SR: 0, SSR: 0 };
+      let remainingExp = totalExp;
+      if (useSSR) {
+        result.SSR = Math.floor(remainingExp / itemExp.SSR);
+        remainingExp %= itemExp.SSR;
+      }
+      result.SR = Math.floor(remainingExp / itemExp.SR);
+      remainingExp %= itemExp.SR;
+      result.R = Math.floor(remainingExp / itemExp.R);
+      remainingExp %= itemExp.R;
+      result.N = Math.ceil(remainingExp / itemExp.N);
+
+      let dungeonRuns = Math.ceil(Math.max(
+        result.N / dungeonDrop.N,
+        result.R / dungeonDrop.R,
+        result.SR / dungeonDrop.SR
+      ));
+
+      let awakenN = 0, awakenR = 0, awakenSR = 0, awakenGold = 0;
+      for (let lvl = current; lvl < target; lvl++) {
+        if (awakenCostTable[lvl]) {
+          const cost = awakenCostTable[lvl];
+          awakenN += cost.N;
+          awakenR += cost.R;
+          awakenSR += cost.SR;
+          awakenGold += cost.gold;
+        }
+      }
+
+      let awakenRuns = Math.ceil(Math.max(
+        awakenN / awakenDrop.N,
+        awakenR / awakenDrop.R,
+        awaken
